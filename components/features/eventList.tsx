@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useEvents } from "@/app/hooks/useEvents"; // Ensure this path is correct
 import { useBookSeat } from "@/app/hooks/useBookSeat"; // Assuming this hook is created
+import { useDeleteEvent } from "@/app/hooks/useDeleteEvent"; // Import the delete event hook
 import Image from "next/image";
+import { useSession } from "next-auth/react";
 
 export interface Event {
   id: string;
@@ -15,12 +17,16 @@ export interface Event {
   isFree: boolean;
   amount: number | null;
   imageUrl: string | null;
+  userId : string
 }
 
 const EventsDisplay = () => {
-  const { events, isLoadingEvents, errorEvents, refetch } = useEvents(); // Destructure refetch
+    const { data: session } = useSession();
+    const loggedInUserId = session?.user?.id;
+  const { events, isLoadingEvents, errorEvents, refetch } = useEvents();
   const bookSeatMutation = useBookSeat();
-  const BASE_URL = "http://localhost:3000";
+  const deleteEventMutation = useDeleteEvent(); 
+
 
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -54,6 +60,19 @@ const EventsDisplay = () => {
     }
   };
 
+  const handleDeleteEvent = (eventId: string) => {
+    if (confirm("Are you sure you want to delete this event?")) {
+      deleteEventMutation.mutate(
+        { eventId }, // Pass the eventId to the delete mutation
+        {
+          onSuccess: () => {
+            refetch(); // Refetch the events after deletion
+          },
+        }
+      );
+    }
+  };
+
   if (isLoadingEvents) {
     return <p>Loading...</p>;
   }
@@ -69,7 +88,7 @@ const EventsDisplay = () => {
           <div key={event.id} className="p-4 border rounded shadow">
             {event.imageUrl ? (
               <Image
-                src={`${BASE_URL}${event.imageUrl.startsWith("/") ? event.imageUrl : `/${event.imageUrl}`}`}
+                src={`${event.imageUrl.startsWith("/") ? event.imageUrl : `/${event.imageUrl}`}`}
                 alt={event.title}
                 width={400}
                 height={300}
@@ -94,6 +113,14 @@ const EventsDisplay = () => {
             >
               Book
             </button>
+            {loggedInUserId === event.userId && (
+              <button
+                onClick={() => handleDeleteEvent(event.id)}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded"
+              >
+                Delete
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -133,3 +160,5 @@ const EventsDisplay = () => {
 };
 
 export default EventsDisplay;
+
+

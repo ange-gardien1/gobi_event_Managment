@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
 import Provider from "./_trpc/provider";
+import { Toaster } from "@/components/ui/toaster";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body className={poppins.variable}>
         <SessionProvider>
           <Provider>{children} </Provider>
+          <Toaster/>
         </SessionProvider>
       </body>
     </html>

@@ -14,6 +14,7 @@ export const getEvents = publicProcedure.query(async () => {
       amount: events.amount,
       isFree: events.isFree,
       imageUrl: events.imageUrl,
+      userId:events.userId
     })
     .from(events);
 

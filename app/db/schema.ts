@@ -87,19 +87,23 @@ import {
   )
 
 
-export const events = pgTable("events", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  title: text("title").notNull(),
-  description: text("description"),
-  date: timestamp("date").notNull(),
-  startTime: timestamp("startTime").notNull(),
-  endTime: timestamp("endTime").notNull(),
-  availableSeats: integer("availableSeats").notNull(),
-  bookedSeats: integer("bookedSeats").default(0).notNull(),
-  isFree: boolean("isFree").notNull().default(true),
-  amount: integer("amount"),
-  imageUrl: text("imageUrl"),
-});
+  export const events = pgTable("events", {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    title: text("title").notNull(),
+    description: text("description"),
+    date: timestamp("date").notNull(),
+    startTime: timestamp("startTime").notNull(),
+    endTime: timestamp("endTime").notNull(),
+    availableSeats: integer("availableSeats").notNull(),
+    bookedSeats: integer("bookedSeats").default(0).notNull(),
+    isFree: boolean("isFree").notNull().default(true),
+    amount: integer("amount"),
+    imageUrl: text("imageUrl"),
+    userId: text("userId") 
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }), 
+  });
+  
 
 
 export const bookings = pgTable("bookings", {

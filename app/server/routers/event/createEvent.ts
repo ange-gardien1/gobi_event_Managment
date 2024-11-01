@@ -16,7 +16,13 @@ export const createEventInput = z.object({
 
 export const createEvent = protectedProcedure
   .input(createEventInput)
-  .mutation(async ({ input }) => {
+  .mutation(async ({ input, ctx }) => {
+    const userId = ctx.session?.user?.id;
+
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
     const newEvent = await db
       .insert(events)
       .values({
@@ -30,7 +36,9 @@ export const createEvent = protectedProcedure
         isFree: input.isFree,
         amount: input.amount,
         imageUrl: input.imageUrl,
+        userId, 
       })
       .returning();
+
     return newEvent;
   });
