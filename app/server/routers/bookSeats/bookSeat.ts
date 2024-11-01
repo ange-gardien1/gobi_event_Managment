@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure } from "../../trpc";
+import {  publicProcedure } from "../../trpc";
 import { db } from "@/app/db";
 import { bookings, events } from "@/app/db/schema";
 import { eq } from "drizzle-orm/expressions";
@@ -9,7 +9,7 @@ export const bookSeatInput = z.object({
   guestEmail: z.string().email(),
 });
 
-export const bookSeat = protectedProcedure
+export const bookSeat = publicProcedure
   .input(bookSeatInput)
   .mutation(async ({ input }) => {
     const { eventId, guestEmail } = input;

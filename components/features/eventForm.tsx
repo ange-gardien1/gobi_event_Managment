@@ -36,6 +36,8 @@ const EventForm = ({ userId, type }: EventFormProps) => {
   });
 
   const createEventMutation = trpc.events.createEvent.useMutation();
+  const [isCreating, setIsCreating] = useState(false); // State for tracking event creation status
+
   const onSubmit = async (values: z.infer<typeof eventFormSchema>) => {
     const formattedValues = {
       title: values.title,
@@ -48,22 +50,23 @@ const EventForm = ({ userId, type }: EventFormProps) => {
       amount: values.isFree ? 0 : parseFloat(values.price) || 0,
       userId,
     };
-  
+
+    setIsCreating(true); // Set creating status to true
     try {
       const response = await createEventMutation.mutateAsync(formattedValues);
       console.log("Event created:", response);
+      alert("Event created successfully!"); 
     } catch (error) {
       console.error("Failed to create event:", error);
+      alert("Failed to create event: " ); 
+    } finally {
+      setIsCreating(false);
     }
   };
-  
 
   return (
     <Form {...form}>
-      <form
-        onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-5"
-      >
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
         <FormField
           control={form.control}
           name="title"
@@ -129,7 +132,6 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   onChange={(e) => {
                     const dateValue = new Date(e.target.value);
                     field.onChange(dateValue); // Send Date object to state
-                    console.log("Date value set:", dateValue); // Check parsed Date
                   }}
                 />
               </FormControl>
@@ -137,6 +139,7 @@ const EventForm = ({ userId, type }: EventFormProps) => {
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="endDateTime"
@@ -152,7 +155,6 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   onChange={(e) => {
                     const dateValue = new Date(e.target.value);
                     field.onChange(dateValue); // Send Date object to state
-                    console.log("Date value set:", dateValue); // Check parsed Date
                   }}
                 />
               </FormControl>
@@ -221,8 +223,8 @@ const EventForm = ({ userId, type }: EventFormProps) => {
           )}
         />
 
-        <Button type="submit" className="mt-4">
-          {type} Event
+        <Button type="submit" className="mt-4" disabled={isCreating}>
+          {isCreating ? "Creating event is pending..." : `${type} Event`}
         </Button>
       </form>
     </Form>
