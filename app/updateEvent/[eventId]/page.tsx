@@ -3,11 +3,13 @@ import EventForm from "@/components/features/eventForm";
 import Header from "@/components/features/header";
 import { redirect } from "next/navigation";
 
-export default async function UpdateEvent({
-  params,
-}: {
-  params: { eventId: string };
-}) {
+type PageProps = {
+  params: {
+    eventId: string;
+  };
+};
+
+export default async function UpdateEvent({ params }: PageProps) {
   const session = await auth();
   const userId = session?.user?.id;
 
