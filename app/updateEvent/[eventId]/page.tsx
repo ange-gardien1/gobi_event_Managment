@@ -1,33 +1,52 @@
+'use client';
+
+import { useEffect, useState } from "react";
 import { auth } from "@/auth";
 import EventForm from "@/components/features/eventForm";
 import Header from "@/components/features/header";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/router";
 
-type PageProps = {
-  params: {
-    eventId: string;
-  };
-};
+export default function UpdateEvent() {
+  const router = useRouter();
+  const { eventId } = router.query; 
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function UpdateEvent({ params }: PageProps) {
-  const session = await auth();
-  const userId = session?.user?.id;
+  useEffect(() => {
+    const fetchSession = async () => {
+      const session = await auth();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+      } else {
+        router.push("/signin");
+      }
+      setLoading(false);
+    };
 
-  if (!userId) {
-    redirect("/signin");
+    fetchSession();
+  }, [router]);
+
+  if (loading) {
+    return <p>Loading...</p>; 
+  }
+
+ 
+  const validEventId = typeof eventId === "string" ? eventId : "";
+
+  if (!userId || !validEventId) {
+    return <p>Invalid user or event ID.</p>; 
   }
 
   return (
     <>
       <Header />
       <section className="bg-dotted-pattern bg-cover bg-center py-5 md:py-10">
-        <h3 className="wrapper h3-bold text-center sm:text-left">
+        <h2 className="wrapper h3-bold text-center sm:text-left">
           Update Event
-        </h3>
+        </h2>
       </section>
-
       <div className="wrapper my-8">
-        <EventForm userId={userId} eventId={params.eventId} type="Update" />
+        <EventForm userId={userId} eventId={validEventId} type="Update" />
       </div>
     </>
   );
