@@ -12,7 +12,7 @@ export default function Provider({ children }: { children: React.ReactNode }) {
       links: [
         httpBatchLink({
           // url: "http://localhost:3000/api/trpc",
-          url:"https://gobi-event-managment-w3jt.vercel.app",
+          url:"https://gobi-event-managment-w3jt.vercel.app/api/trpc",
         }),
       ],
     })
