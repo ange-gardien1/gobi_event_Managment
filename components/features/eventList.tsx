@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useEvents } from "@/app/hooks/useEvents"; // Ensure this path is correct
-import { useBookSeat } from "@/app/hooks/useBookSeat"; // Assuming this hook is created
-import { useDeleteEvent } from "@/app/hooks/useDeleteEvent"; // Import the delete event hook
+import { useEvents } from "@/app/hooks/useEvents"; 
+import { useBookSeat } from "@/app/hooks/useBookSeat";
+import { useDeleteEvent } from "@/app/hooks/useDeleteEvent";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Button } from "../ui/button";
+
 
 export interface Event {
   id: string;
@@ -17,21 +20,21 @@ export interface Event {
   isFree: boolean;
   amount: number | null;
   imageUrl: string | null;
-  userId : string
+  userId: string;
 }
 
 const EventsDisplay = () => {
-    const { data: session } = useSession();
-    const loggedInUserId = session?.user?.id;
+const router = useRouter();
+  const { data: session } = useSession();
+  const loggedInUserId = session?.user?.id;
   const { events, isLoadingEvents, errorEvents, refetch } = useEvents();
   const bookSeatMutation = useBookSeat();
-  const deleteEventMutation = useDeleteEvent(); 
-
+  const deleteEventMutation = useDeleteEvent();
 
   const [isPopupOpen, setPopupOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [guestEmail, setGuestEmail] = useState("");
-  const [isBooking, setIsBooking] = useState(false); // State to track booking status
+  const [isBooking, setIsBooking] = useState(false);
 
   const handleBookButtonClick = (eventId: string) => {
     setSelectedEventId(eventId);
@@ -40,7 +43,7 @@ const EventsDisplay = () => {
 
   const handleSubmitBooking = () => {
     if (selectedEventId && guestEmail) {
-      setIsBooking(true); // Set booking state to true
+      setIsBooking(true);
       bookSeatMutation.mutate(
         { eventId: selectedEventId, guestEmail },
         {
@@ -48,12 +51,12 @@ const EventsDisplay = () => {
             alert("Booking successful!");
             setPopupOpen(false);
             setGuestEmail("");
-            refetch(); // Call refetch to update the events
-            setIsBooking(false); // Reset booking state
+            refetch();
+            setIsBooking(false);
           },
           onError: (error) => {
             alert(`Booking failed: ${error.message}`);
-            setIsBooking(false); // Reset booking state
+            setIsBooking(false);
           },
         }
       );
@@ -63,14 +66,18 @@ const EventsDisplay = () => {
   const handleDeleteEvent = (eventId: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
       deleteEventMutation.mutate(
-        { eventId }, // Pass the eventId to the delete mutation
+        { eventId },
         {
           onSuccess: () => {
-            refetch(); // Refetch the events after deletion
+            refetch();
           },
         }
       );
     }
+  };
+
+  const handleUpdateEvent = (eventId: string) => {
+    router.push(`/updateEvent/${eventId}`);
   };
 
   if (isLoadingEvents) {
@@ -88,7 +95,11 @@ const EventsDisplay = () => {
           <div key={event.id} className="p-4 border rounded shadow">
             {event.imageUrl ? (
               <Image
-                src={`${event.imageUrl.startsWith("/") ? event.imageUrl : `/${event.imageUrl}`}`}
+                src={`${
+                  event.imageUrl.startsWith("/")
+                    ? event.imageUrl
+                    : `/${event.imageUrl}`
+                }`}
                 alt={event.title}
                 width={400}
                 height={300}
@@ -102,24 +113,34 @@ const EventsDisplay = () => {
             <h3 className="mt-2 text-xl font-semibold">{event.title}</h3>
             <p>{event.description}</p>
             <p>
-              {event.isFree ? "Free" : `$${event.amount}`} - Seats available: {event.availableSeats}
+              {event.isFree ? "Free" : `$${event.amount}`} - Seats available:{" "}
+              {event.availableSeats}
             </p>
             <p>
-              {new Date(event.startTime).toLocaleString()} - {new Date(event.endTime).toLocaleString()}
+              {new Date(event.startTime).toLocaleString()} -{" "}
+              {new Date(event.endTime).toLocaleString()}
             </p>
-            <button
+            <Button
               onClick={() => handleBookButtonClick(event.id)}
               className="mt-2 px-4 py-2 bg-blue-600 text-white rounded"
             >
               Book
-            </button>
+            </Button>
             {loggedInUserId === event.userId && (
-              <button
-                onClick={() => handleDeleteEvent(event.id)}
-                className="mt-2 px-4 py-2 bg-red-600 text-white rounded"
-              >
-                Delete
-              </button>
+              <>
+                <Button
+                  onClick={() => handleUpdateEvent(event.id)}
+                  className="mt-2 px-4 py-2 bg-green-600 text-white rounded"
+                >
+                  Update
+                </Button>
+                <Button
+                  onClick={() => handleDeleteEvent(event.id)}
+                  className="mt-2 px-4 py-2 bg-red-600 text-white rounded"
+                >
+                  Delete
+                </Button>
+              </>
             )}
           </div>
         ))}
@@ -151,7 +172,10 @@ const EventsDisplay = () => {
                 Submit
               </button>
             </div>
-            {isBooking && <p className="mt-4 text-yellow-600">Booking seat is pending...</p>} {/* Show pending message */}
+            {isBooking && (
+              <p className="mt-4 text-yellow-600">Booking seat is pending...</p>
+            )}{" "}
+            {/* Show pending message */}
           </div>
         </div>
       )}
@@ -160,5 +184,3 @@ const EventsDisplay = () => {
 };
 
 export default EventsDisplay;
-
-

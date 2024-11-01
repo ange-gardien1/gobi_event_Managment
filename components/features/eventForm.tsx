@@ -15,9 +15,8 @@ import {
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { eventFormSchema } from "@/lib/validator";
-import { eventDefaultValues } from "@/app/headerLinks";
 import { FileUploader } from "./fileUploader";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Textarea } from "../ui/textarea";
 import { Checkbox } from "../ui/checkbox";
 import { trpc } from "@/app/_trpc/client";
@@ -25,48 +24,90 @@ import { trpc } from "@/app/_trpc/client";
 type EventFormProps = {
   userId: string;
   type: "Create" | "Update";
+  eventId?: string;
 };
 
-const EventForm = ({ userId, type }: EventFormProps) => {
+const EventForm = ({ userId, type, eventId }: EventFormProps) => {
   const [files, setFiles] = useState<File[]>([]);
-  const initialValues = eventDefaultValues;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof eventFormSchema>>({
     resolver: zodResolver(eventFormSchema),
-    defaultValues: initialValues,
+    defaultValues: {
+      title: "",
+      description: "",
+      startDateTime: new Date(),
+      endDateTime: new Date(),
+      availableSeats: 100,
+      imageUrl: "",
+      isFree: false,
+      price: "",
+    },
   });
 
   const createEventMutation = trpc.events.createEvent.useMutation();
-  const [isCreating, setIsCreating] = useState(false); // State for tracking event creation status
+  const updateEventMutation = trpc.events.updateMyEvent.useMutation();
+
+  const {
+    data: eventData,
+    isLoading,
+    error,
+  } = trpc.events.getMyEvent.useQuery(
+    { eventId: eventId || "" },
+    { enabled: type === "Update" && !!eventId }
+  );
+
+  useEffect(() => {
+    if (eventData && type === "Update") {
+      form.reset({
+        title: eventData.title,
+        description: eventData.description || "",
+        startDateTime: new Date(eventData.startTime),
+        endDateTime: new Date(eventData.endTime),
+        availableSeats: eventData.availableSeats,
+        imageUrl: eventData.imageUrl?.startsWith("http") ? eventData.imageUrl : "", 
+        isFree: eventData.isFree,
+        price: eventData.amount ? eventData.amount.toString() : "",
+      });
+    }
+  }, [eventData, form, type]);
 
   const onSubmit = async (values: z.infer<typeof eventFormSchema>) => {
     const formattedValues = {
-      title: values.title,
-      description: values.description,
-      startTime: values.startDateTime.toISOString(), // Convert to string
-      endTime: values.endDateTime.toISOString(),      // Convert to string
-      availableSeats: values.availableSeats || 100,
+      ...values,
+      startTime: values.startDateTime.toISOString(),
+      endTime: values.endDateTime.toISOString(),
       imageUrl: files[0]?.name || values.imageUrl,
-      isFree: values.isFree,
       amount: values.isFree ? 0 : parseFloat(values.price) || 0,
       userId,
     };
 
-    setIsCreating(true); // Set creating status to true
+    setIsSubmitting(true);
     try {
-      const response = await createEventMutation.mutateAsync(formattedValues);
-      console.log("Event created:", response);
-      alert("Event created successfully!"); 
+      if (type === "Create") {
+        await createEventMutation.mutateAsync(formattedValues);
+        alert("Event created successfully!");
+      } else if (type === "Update" && eventId) {
+        await updateEventMutation.mutateAsync({ eventId, ...formattedValues });
+        alert("Event updated successfully!");
+      }
     } catch (error) {
-      console.error("Failed to create event:", error);
-      alert("Failed to create event: " ); 
+      console.error(`Failed to ${type.toLowerCase()} event:`, error);
+      alert(`Failed to ${type.toLowerCase()} event`);
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
+  if (isLoading) return <p>Loading event data...</p>;
+  if (error) return <p>Error loading event data: {error.message}</p>;
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-5"
+      >
         <FormField
           control={form.control}
           name="title"
@@ -80,14 +121,13 @@ const EventForm = ({ userId, type }: EventFormProps) => {
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="description"
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Description</FormLabel>
-              <FormControl className="h-72">
+              <FormControl>
                 <Textarea
                   placeholder="Event Description"
                   {...field}
@@ -105,7 +145,7 @@ const EventForm = ({ userId, type }: EventFormProps) => {
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Image</FormLabel>
-              <FormControl className="h-72">
+              <FormControl>
                 <FileUploader
                   onFieldChange={field.onChange}
                   imageUrl={field.value}
@@ -116,7 +156,6 @@ const EventForm = ({ userId, type }: EventFormProps) => {
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="startDateTime"
@@ -129,17 +168,13 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   value={
                     field.value ? format(field.value, "yyyy-MM-dd'T'HH:mm") : ""
                   }
-                  onChange={(e) => {
-                    const dateValue = new Date(e.target.value);
-                    field.onChange(dateValue); // Send Date object to state
-                  }}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="endDateTime"
@@ -152,17 +187,13 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   value={
                     field.value ? format(field.value, "yyyy-MM-dd'T'HH:mm") : ""
                   }
-                  onChange={(e) => {
-                    const dateValue = new Date(e.target.value);
-                    field.onChange(dateValue); // Send Date object to state
-                  }}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="price"
@@ -174,7 +205,7 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   type="number"
                   placeholder="Price"
                   {...field}
-                  className="p-regular-16 border-0 bg-grey-50 outline-offset-0 focus:border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="p-regular-16 border-0 bg-grey-50"
                 />
               </FormControl>
               <FormMessage />
@@ -191,7 +222,6 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                 onCheckedChange={field.onChange}
                 checked={field.value}
                 id="isFree"
-                className="mr-2 h-5 w-5 border-2 border-primary-500"
               />
               <FormLabel
                 htmlFor="isFree"
@@ -203,7 +233,6 @@ const EventForm = ({ userId, type }: EventFormProps) => {
             </FormItem>
           )}
         />
-
         <FormField
           control={form.control}
           name="availableSeats"
@@ -215,7 +244,7 @@ const EventForm = ({ userId, type }: EventFormProps) => {
                   type="number"
                   placeholder="Available Seats"
                   {...field}
-                  className="p-regular-16 border-0 bg-grey-50 outline-offset-0 focus:border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                  className="p-regular-16 border-0 bg-grey-50"
                 />
               </FormControl>
               <FormMessage />
@@ -223,8 +252,8 @@ const EventForm = ({ userId, type }: EventFormProps) => {
           )}
         />
 
-        <Button type="submit" className="mt-4" disabled={isCreating}>
-          {isCreating ? "Creating event is pending..." : `${type} Event`}
+        <Button type="submit" className="mt-4" disabled={isSubmitting}>
+          {isSubmitting ? "Processing..." : `${type} Event`}
         </Button>
       </form>
     </Form>
