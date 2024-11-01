@@ -55,7 +55,7 @@ export default async function Home() {
 
         <div className="flex w-full flex-col gap-5 md:flex-row justify-around mt-6">
           {/* Add any event cards, stats, or images here */}
-          <div className="bg-white rounded-lg shadow-lg p-6 md:w-1/3 text-center">
+          {/* <div className="bg-white rounded-lg shadow-lg p-6 md:w-1/3 text-center">
             <h3 className="text-xl font-semibold text-indigo-700 mb-4">
               3000+ Successful Events
             </h3>
@@ -63,9 +63,9 @@ export default async function Home() {
               From corporate galas to community gatherings, we ve empowered
               thousands of hosts to deliver unforgettable events.
             </p>
-          </div>
+          </div> */}
             <EventsDisplay/>
-          <div className="bg-white rounded-lg shadow-lg p-6 md:w-1/3 text-center">
+          {/* <div className="bg-white rounded-lg shadow-lg p-6 md:w-1/3 text-center">
             <h3 className="text-xl font-semibold text-indigo-700 mb-4">
               200+ Expert Mentors
             </h3>
@@ -73,7 +73,7 @@ export default async function Home() {
               Connect with professionals who bring years of experience and
               insight to help you plan the perfect event.
             </p>
-          </div>
+          </div> */}
         </div>
       </section>
     </>
